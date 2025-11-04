@@ -243,12 +243,17 @@ class GraphClient:
         Returns:
             List of document libraries
         """
-        # For root site, use different endpoint format
-        if site_name == "root" or not site_name:
-            endpoint = f"sites/{domain}:/drives"
-        else:
-            endpoint = f"sites/{domain}:/sites/{site_name}:/drives"
-        logger.info(f"Listing document libraries for domain: {domain}, site: {site_name}")
+        # First get site info to retrieve the site ID
+        # This is necessary because application credentials require the site ID format
+        site_info = await self.get_site_info(domain, site_name)
+        site_id = site_info.get("id")
+        
+        if not site_id:
+            raise Exception(f"Failed to get site ID for domain: {domain}, site: {site_name}")
+        
+        # Use site ID to list drives
+        endpoint = f"sites/{site_id}/drives"
+        logger.info(f"Listing document libraries for site ID: {site_id}")
         return await self.get(endpoint)
     
     async def create_site(self, display_name: str, alias: str, description: str = "") -> Dict[str, Any]:
