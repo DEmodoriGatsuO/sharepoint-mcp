@@ -220,12 +220,16 @@ class GraphClient:
         
         Args:
             domain: SharePoint domain
-            site_name: Name of the site
+            site_name: Name of the site (use "root" or empty string for root site)
             
         Returns:
             Site information
         """
-        endpoint = f"sites/{domain}:/sites/{site_name}"
+        # For root site, use different endpoint format
+        if site_name == "root" or not site_name:
+            endpoint = f"sites/{domain}:"
+        else:
+            endpoint = f"sites/{domain}:/sites/{site_name}"
         logger.info(f"Getting site info for domain: {domain}, site: {site_name}")
         return await self.get(endpoint)
     
@@ -234,12 +238,16 @@ class GraphClient:
         
         Args:
             domain: SharePoint domain
-            site_name: Name of the site
+            site_name: Name of the site (use "root" or empty string for root site)
             
         Returns:
             List of document libraries
         """
-        endpoint = f"sites/{domain}:/sites/{site_name}:/drives"
+        # For root site, use different endpoint format
+        if site_name == "root" or not site_name:
+            endpoint = f"sites/{domain}:/drives"
+        else:
+            endpoint = f"sites/{domain}:/sites/{site_name}:/drives"
         logger.info(f"Listing document libraries for domain: {domain}, site: {site_name}")
         return await self.get(endpoint)
     
