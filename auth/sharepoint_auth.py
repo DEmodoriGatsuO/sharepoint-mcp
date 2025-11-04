@@ -206,7 +206,7 @@ def validate_config() -> None:
     
     # Validate site URL format
     site_url = SHAREPOINT_CONFIG["site_url"]
-    if not site_url.startswith("https://") or ".sharepoint.com/" not in site_url.lower():
+    if not site_url.startswith("https://") or ".sharepoint.com" not in site_url.lower():
         logger.error(f"Invalid SharePoint site URL: {site_url}")
         raise ValueError(f"Invalid SharePoint site URL: {site_url}")
 

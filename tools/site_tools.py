@@ -15,6 +15,11 @@ from config.settings import SHAREPOINT_CONFIG
 # Set up logging
 logger = logging.getLogger("sharepoint_tools")
 
+def _check_auth(sp_ctx) -> None:
+    """Check if authentication context is valid, raise exception if not."""
+    if not sp_ctx or sp_ctx.access_token == "error" or not sp_ctx.is_token_valid():
+        raise Exception("SharePoint authentication failed. Please check your configuration (CLIENT_ID, CLIENT_SECRET, TENANT_ID, SITE_URL).")
+
 def register_site_tools(mcp: FastMCP):
     """Register SharePoint site tools with the MCP server."""
     
@@ -26,6 +31,7 @@ def register_site_tools(mcp: FastMCP):
         try:
             # Get authentication context from context object
             sp_ctx = ctx.request_context.lifespan_context
+            _check_auth(sp_ctx)
             
             # Refresh token if needed
             await refresh_token_if_needed(sp_ctx)
@@ -58,7 +64,7 @@ def register_site_tools(mcp: FastMCP):
             
         except Exception as e:
             logger.error(f"Error in get_site_info: {str(e)}")
-            return f"Error accessing SharePoint: {str(e)}"
+            raise  # Re-raise exception so FastMCP can mark it as an error
             
     @mcp.tool()
     async def list_document_libraries(ctx: Context) -> str:
@@ -68,6 +74,7 @@ def register_site_tools(mcp: FastMCP):
         try:
             # Get authentication context from context object
             sp_ctx = ctx.request_context.lifespan_context
+            _check_auth(sp_ctx)
             
             # Refresh token if needed
             await refresh_token_if_needed(sp_ctx)
@@ -100,7 +107,7 @@ def register_site_tools(mcp: FastMCP):
             
         except Exception as e:
             logger.error(f"Error in list_document_libraries: {str(e)}")
-            return f"Error accessing SharePoint document libraries: {str(e)}"
+            raise  # Re-raise exception so FastMCP can mark it as an error
             
     @mcp.tool()
     async def search_sharepoint(ctx: Context, query: str) -> str:
@@ -114,6 +121,7 @@ def register_site_tools(mcp: FastMCP):
         try:
             # Get authentication context from context object
             sp_ctx = ctx.request_context.lifespan_context
+            _check_auth(sp_ctx)
             
             # Refresh token if needed
             await refresh_token_if_needed(sp_ctx)
@@ -134,7 +142,7 @@ def register_site_tools(mcp: FastMCP):
             
             if not site_id:
                 logger.error("Failed to get site ID")
-                return "Error: Could not retrieve site ID"
+                raise Exception("Error: Could not retrieve site ID")
             
             # Execute search request
             search_url = f"sites/{site_id}/search"
@@ -172,7 +180,7 @@ def register_site_tools(mcp: FastMCP):
             
         except Exception as e:
             logger.error(f"Error in search_sharepoint: {str(e)}")
-            return f"Error searching SharePoint: {str(e)}"
+            raise  # Re-raise exception so FastMCP can mark it as an error
     
     @mcp.tool()
     async def create_sharepoint_site(ctx: Context, display_name: str, alias: str, description: str = "") -> str:
@@ -188,6 +196,7 @@ def register_site_tools(mcp: FastMCP):
         try:
             # Get authentication context and refresh if needed
             sp_ctx = ctx.request_context.lifespan_context
+            _check_auth(sp_ctx)
             await refresh_token_if_needed(sp_ctx)
             
             # Create Graph client
@@ -200,7 +209,7 @@ def register_site_tools(mcp: FastMCP):
             return json.dumps(site_info, indent=2)
         except Exception as e:
             logger.error(f"Error in create_sharepoint_site: {str(e)}")
-            return f"Error creating SharePoint site: {str(e)}"
+            raise  # Re-raise exception so FastMCP can mark it as an error
     
     @mcp.tool()
     async def create_intelligent_list(ctx: Context, site_id: str, purpose: str, display_name: str) -> str:
@@ -216,6 +225,7 @@ def register_site_tools(mcp: FastMCP):
         try:
             # Get authentication context and refresh if needed
             sp_ctx = ctx.request_context.lifespan_context
+            _check_auth(sp_ctx)
             await refresh_token_if_needed(sp_ctx)
             
             # Create Graph client
@@ -228,7 +238,7 @@ def register_site_tools(mcp: FastMCP):
             return json.dumps(list_info, indent=2)
         except Exception as e:
             logger.error(f"Error in create_intelligent_list: {str(e)}")
-            return f"Error creating intelligent list: {str(e)}"
+            raise  # Re-raise exception so FastMCP can mark it as an error
     
     @mcp.tool()
     async def create_list_item(ctx: Context, site_id: str, list_id: str, fields: Dict[str, Any]) -> str:
@@ -247,6 +257,7 @@ def register_site_tools(mcp: FastMCP):
         try:
             # Get authentication context and refresh if needed
             sp_ctx = ctx.request_context.lifespan_context
+            _check_auth(sp_ctx)
             await refresh_token_if_needed(sp_ctx)
             
             # Create Graph client
@@ -259,7 +270,7 @@ def register_site_tools(mcp: FastMCP):
             return json.dumps(item_info, indent=2)
         except Exception as e:
             logger.error(f"Error in create_list_item: {str(e)}")
-            return f"Error creating list item: {str(e)}"
+            raise  # Re-raise exception so FastMCP can mark it as an error
     
     @mcp.tool()
     async def update_list_item(ctx: Context, site_id: str, list_id: str, 
@@ -280,6 +291,7 @@ def register_site_tools(mcp: FastMCP):
         try:
             # Get authentication context and refresh if needed
             sp_ctx = ctx.request_context.lifespan_context
+            _check_auth(sp_ctx)
             await refresh_token_if_needed(sp_ctx)
             
             # Create Graph client
@@ -292,7 +304,7 @@ def register_site_tools(mcp: FastMCP):
             return json.dumps(item_info, indent=2)
         except Exception as e:
             logger.error(f"Error in update_list_item: {str(e)}")
-            return f"Error updating list item: {str(e)}"
+            raise  # Re-raise exception so FastMCP can mark it as an error
     
     @mcp.tool()
     async def create_advanced_document_library(ctx: Context, site_id: str, display_name: str, 
@@ -309,6 +321,7 @@ def register_site_tools(mcp: FastMCP):
         try:
             # Get authentication context and refresh if needed
             sp_ctx = ctx.request_context.lifespan_context
+            _check_auth(sp_ctx)
             await refresh_token_if_needed(sp_ctx)
             
             # Create Graph client
@@ -321,7 +334,7 @@ def register_site_tools(mcp: FastMCP):
             return json.dumps(library_info, indent=2)
         except Exception as e:
             logger.error(f"Error in create_advanced_document_library: {str(e)}")
-            return f"Error creating advanced document library: {str(e)}"
+            raise  # Re-raise exception so FastMCP can mark it as an error
     
     @mcp.tool()
     async def upload_document(ctx: Context, site_id: str, drive_id: str, folder_path: str, 
@@ -345,6 +358,7 @@ def register_site_tools(mcp: FastMCP):
         try:
             # Get authentication context and refresh if needed
             sp_ctx = ctx.request_context.lifespan_context
+            _check_auth(sp_ctx)
             await refresh_token_if_needed(sp_ctx)
             
             # Create Graph client
@@ -359,7 +373,7 @@ def register_site_tools(mcp: FastMCP):
             return json.dumps(doc_info, indent=2)
         except Exception as e:
             logger.error(f"Error in upload_document: {str(e)}")
-            return f"Error uploading document: {str(e)}"
+            raise  # Re-raise exception so FastMCP can mark it as an error
     
     @mcp.tool()
     async def create_modern_page(ctx: Context, site_id: str, name: str, 
@@ -377,6 +391,7 @@ def register_site_tools(mcp: FastMCP):
         try:
             # Get authentication context and refresh if needed
             sp_ctx = ctx.request_context.lifespan_context
+            _check_auth(sp_ctx)
             await refresh_token_if_needed(sp_ctx)
             
             # Create Graph client
@@ -416,7 +431,7 @@ def register_site_tools(mcp: FastMCP):
             return json.dumps(result, indent=2)
         except Exception as e:
             logger.error(f"Error in create_modern_page: {str(e)}")
-            return f"Error creating modern page: {str(e)}"
+            raise  # Re-raise exception so FastMCP can mark it as an error
     
     @mcp.tool()
     async def create_news_post(ctx: Context, site_id: str, title: str, 
@@ -437,6 +452,7 @@ def register_site_tools(mcp: FastMCP):
         try:
             # Get authentication context and refresh if needed
             sp_ctx = ctx.request_context.lifespan_context
+            _check_auth(sp_ctx)
             await refresh_token_if_needed(sp_ctx)
             
             # Create Graph client
@@ -451,7 +467,7 @@ def register_site_tools(mcp: FastMCP):
             return json.dumps(news_info, indent=2)
         except Exception as e:
             logger.error(f"Error in create_news_post: {str(e)}")
-            return f"Error creating news post: {str(e)}"
+            raise  # Re-raise exception so FastMCP can mark it as an error
     
     @mcp.tool()
     async def get_document_content(ctx: Context, site_id: str, drive_id: str, 
@@ -469,6 +485,7 @@ def register_site_tools(mcp: FastMCP):
         try:
             # Get authentication context and refresh if needed
             sp_ctx = ctx.request_context.lifespan_context
+            _check_auth(sp_ctx)
             await refresh_token_if_needed(sp_ctx)
             
             # Create Graph client
@@ -484,4 +501,4 @@ def register_site_tools(mcp: FastMCP):
             return json.dumps(processed_content, indent=2)
         except Exception as e:
             logger.error(f"Error in get_document_content: {str(e)}")
-            return f"Error getting document content: {str(e)}"
+            raise  # Re-raise exception so FastMCP can mark it as an error
