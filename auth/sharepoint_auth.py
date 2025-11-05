@@ -51,7 +51,11 @@ class SharePointContext:
             site_name = site_parts[2] if len(site_parts) > 2 else "root"
             
             # Get site information via Microsoft Graph API
-            site_url = f"{self.graph_url}/sites/{domain}:/sites/{site_name}"
+            # For root site, use different endpoint format
+            if site_name == "root" or not site_name:
+                site_url = f"{self.graph_url}/sites/{domain}:"
+            else:
+                site_url = f"{self.graph_url}/sites/{domain}:/sites/{site_name}"
             logger.debug(f"Testing connection to: {site_url}")
             
             response = requests.get(site_url, headers=self.headers)
@@ -77,7 +81,11 @@ class SharePointContext:
             site_name = site_parts[2] if len(site_parts) > 2 else "root"
             
             # First get site ID
-            site_url = f"{self.graph_url}/sites/{domain}:/sites/{site_name}"
+            # For root site, use different endpoint format
+            if site_name == "root" or not site_name:
+                site_url = f"{self.graph_url}/sites/{domain}:"
+            else:
+                site_url = f"{self.graph_url}/sites/{domain}:/sites/{site_name}"
             response = requests.get(site_url, headers=self.headers)
             
             if response.status_code != 200:
@@ -206,7 +214,7 @@ def validate_config() -> None:
     
     # Validate site URL format
     site_url = SHAREPOINT_CONFIG["site_url"]
-    if not site_url.startswith("https://") or ".sharepoint.com/" not in site_url.lower():
+    if not site_url.startswith("https://") or ".sharepoint.com" not in site_url.lower():
         logger.error(f"Invalid SharePoint site URL: {site_url}")
         raise ValueError(f"Invalid SharePoint site URL: {site_url}")
 
