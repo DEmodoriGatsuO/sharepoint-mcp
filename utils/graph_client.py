@@ -1229,3 +1229,75 @@ class GraphClient:
             doc_type.lower(),
             ["General", "Templates", "Working Documents", "Published", "Archive"],
         )
+
+    async def list_folder_contents(
+        self, site_id: str, drive_id: str, folder_path: str = ""
+    ) -> Dict[str, Any]:
+        """List files and folders at a given path in a document library.
+
+        Args:
+            site_id: ID of the site
+            drive_id: ID of the document library (drive)
+            folder_path: Folder path relative to drive root (e.g. "General" or
+                "Docs/2026"). Use empty string or "/" to list the root.
+
+        Returns:
+            Graph API response containing a 'value' list of drive items
+        """
+        if not folder_path or folder_path.strip("/") == "":
+            endpoint = f"sites/{site_id}/drives/{drive_id}/root/children"
+        else:
+            clean_path = folder_path.strip("/")
+            endpoint = f"sites/{site_id}/drives/{drive_id}/root:/{clean_path}:/children"
+
+        logger.info(f"Listing folder contents at path: '{folder_path or '/'}'")
+        return await self.get(endpoint)
+
+    async def get_document_content_by_path(
+        self, site_id: str, drive_id: str, file_path: str
+    ) -> bytes:
+        """Get content of a document by its path in a document library.
+
+        Args:
+            site_id: ID of the site
+            drive_id: ID of the document library (drive)
+            file_path: File path relative to drive root (e.g. "General/report.docx")
+
+        Returns:
+            Document content as bytes
+        """
+        clean_path = file_path.strip("/")
+        url = f"{self.base_url}/sites/{site_id}/drives/{drive_id}/root:/{clean_path}:/content"
+
+        headers = self.context.headers.copy()
+        headers.pop("Content-Type", None)
+
+        logger.info(f"Getting document content by path: '{file_path}'")
+        response = requests.get(url, headers=headers, stream=True)
+
+        if response.status_code != 200:
+            error_text = response.text
+            logger.error(f"Graph API error: {response.status_code} - {error_text}")
+            raise Exception(f"Graph API error: {response.status_code} - {error_text}")
+
+        return response.content
+
+    async def get_item_metadata_by_path(
+        self, site_id: str, drive_id: str, item_path: str
+    ) -> Dict[str, Any]:
+        """Get metadata of a file or folder by its path in a document library.
+
+        Args:
+            site_id: ID of the site
+            drive_id: ID of the document library (drive)
+            item_path: Item path relative to drive root (e.g. "General/report.docx"
+                or "General")
+
+        Returns:
+            Drive item metadata including id, name, size, webUrl, and timestamps
+        """
+        clean_path = item_path.strip("/")
+        endpoint = f"sites/{site_id}/drives/{drive_id}/root:/{clean_path}"
+
+        logger.info(f"Getting item metadata by path: '{item_path}'")
+        return await self.get(endpoint)
