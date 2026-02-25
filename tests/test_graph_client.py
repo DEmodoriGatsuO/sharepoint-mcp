@@ -76,3 +76,74 @@ async def test_post(mock_post, graph_client):
     with pytest.raises(Exception) as excinfo:
         await graph_client.post("endpoint/error", test_data)
     assert "Graph API error: 400" in str(excinfo.value)
+
+
+@patch("requests.get")
+async def test_list_folder_contents_root(mock_get, graph_client):
+    """Test list_folder_contents with an empty path (root listing)."""
+    mock_response = MagicMock()
+    mock_response.status_code = 200
+    mock_response.json.return_value = {
+        "value": [{"name": "General", "folder": {}, "id": "abc123"}]
+    }
+    mock_get.return_value = mock_response
+
+    result = await graph_client.list_folder_contents("site1", "drive1", "")
+    assert result["value"][0]["name"] == "General"
+    call_url = mock_get.call_args[0][0]
+    assert "root/children" in call_url
+    assert "root:/" not in call_url
+
+
+@patch("requests.get")
+async def test_list_folder_contents_subfolder(mock_get, graph_client):
+    """Test list_folder_contents with a subfolder path."""
+    mock_response = MagicMock()
+    mock_response.status_code = 200
+    mock_response.json.return_value = {
+        "value": [{"name": "report.docx", "file": {}, "id": "def456"}]
+    }
+    mock_get.return_value = mock_response
+
+    result = await graph_client.list_folder_contents("site1", "drive1", "General")
+    assert result["value"][0]["name"] == "report.docx"
+    call_url = mock_get.call_args[0][0]
+    assert "root:/General:/children" in call_url
+
+
+@patch("requests.get")
+async def test_get_document_content_by_path(mock_get, graph_client):
+    """Test get_document_content_by_path returns bytes content."""
+    mock_response = MagicMock()
+    mock_response.status_code = 200
+    mock_response.content = b"file content bytes"
+    mock_get.return_value = mock_response
+
+    result = await graph_client.get_document_content_by_path(
+        "site1", "drive1", "General/report.docx"
+    )
+    assert result == b"file content bytes"
+    call_url = mock_get.call_args[0][0]
+    assert "root:/General/report.docx:/content" in call_url
+
+
+@patch("requests.get")
+async def test_get_item_metadata_by_path(mock_get, graph_client):
+    """Test get_item_metadata_by_path returns item metadata dict."""
+    mock_response = MagicMock()
+    mock_response.status_code = 200
+    mock_response.json.return_value = {
+        "id": "abc123",
+        "name": "report.docx",
+        "size": 4096,
+        "webUrl": "https://contoso.sharepoint.com/sites/test/report.docx",
+    }
+    mock_get.return_value = mock_response
+
+    result = await graph_client.get_item_metadata_by_path(
+        "site1", "drive1", "General/report.docx"
+    )
+    assert result["id"] == "abc123"
+    assert result["name"] == "report.docx"
+    call_url = mock_get.call_args[0][0]
+    assert "root:/General/report.docx" in call_url

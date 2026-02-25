@@ -562,3 +562,131 @@ def register_site_tools(mcp: FastMCP):
         except Exception as e:
             logger.error(f"Error in get_document_content: {str(e)}")
             raise  # Re-raise exception so FastMCP can mark it as an error
+
+    @mcp.tool()
+    async def list_folder_contents(
+        ctx: Context, site_id: str, drive_id: str, folder_path: str = ""
+    ) -> str:
+        """List files and folders at a given path in a SharePoint document library.
+
+        Args:
+            site_id: ID of the site
+            drive_id: ID of the document library (drive)
+            folder_path: Folder path relative to drive root (e.g. "General" or
+                "Docs/2026"). Leave empty to list the root of the drive.
+        """
+        logger.info(f"Tool called: list_folder_contents path='{folder_path or '/'}'")
+        try:
+            sp_ctx = ctx.request_context.lifespan_context
+            _check_auth(sp_ctx)
+            await refresh_token_if_needed(sp_ctx)
+            graph_client = GraphClient(sp_ctx)
+
+            result = await graph_client.list_folder_contents(
+                site_id, drive_id, folder_path
+            )
+
+            items = result.get("value", [])
+            formatted = [
+                {
+                    "name": item.get("name", "Unknown"),
+                    "type": "folder" if "folder" in item else "file",
+                    "size": item.get("size", 0),
+                    "id": item.get("id", "Unknown"),
+                    "web_url": item.get("webUrl", "Unknown"),
+                    "last_modified": item.get("lastModifiedDateTime", "Unknown"),
+                }
+                for item in items
+            ]
+
+            logger.info(
+                f"Successfully listed {len(formatted)} items at path '{folder_path or '/'}'"
+            )
+            return json.dumps(formatted, indent=2)
+        except Exception as e:
+            logger.error(f"Error in list_folder_contents: {str(e)}")
+            raise
+
+    @mcp.tool()
+    async def get_document_by_path(
+        ctx: Context, site_id: str, drive_id: str, file_path: str, filename: str
+    ) -> str:
+        """Get and process the content of a SharePoint document by its path.
+
+        Args:
+            site_id: ID of the site
+            drive_id: ID of the document library (drive)
+            file_path: File path relative to drive root (e.g. "General/report.docx")
+            filename: File name used to detect the document type (e.g. "report.docx")
+        """
+        logger.info(f"Tool called: get_document_by_path path='{file_path}'")
+        try:
+            sp_ctx = ctx.request_context.lifespan_context
+            _check_auth(sp_ctx)
+            await refresh_token_if_needed(sp_ctx)
+            graph_client = GraphClient(sp_ctx)
+
+            content = await graph_client.get_document_content_by_path(
+                site_id, drive_id, file_path
+            )
+
+            processed_content = DocumentProcessor.process_document(content, filename)
+
+            logger.info(
+                f"Successfully processed document content for path: '{file_path}'"
+            )
+            return json.dumps(processed_content, indent=2)
+        except Exception as e:
+            logger.error(f"Error in get_document_by_path: {str(e)}")
+            raise
+
+    @mcp.tool()
+    async def get_item_metadata(
+        ctx: Context, site_id: str, drive_id: str, item_path: str
+    ) -> str:
+        """Get metadata of a file or folder by its path in a SharePoint document library.
+
+        Returns the item's id, name, size, web URL, and timestamps.
+        Use the returned id with get_document_content to retrieve file content.
+
+        Args:
+            site_id: ID of the site
+            drive_id: ID of the document library (drive)
+            item_path: Item path relative to drive root (e.g. "General/report.docx"
+                or "General")
+        """
+        logger.info(f"Tool called: get_item_metadata path='{item_path}'")
+        try:
+            sp_ctx = ctx.request_context.lifespan_context
+            _check_auth(sp_ctx)
+            await refresh_token_if_needed(sp_ctx)
+            graph_client = GraphClient(sp_ctx)
+
+            item = await graph_client.get_item_metadata_by_path(
+                site_id, drive_id, item_path
+            )
+
+            result = {
+                "id": item.get("id", "Unknown"),
+                "name": item.get("name", "Unknown"),
+                "size": item.get("size", 0),
+                "web_url": item.get("webUrl", "Unknown"),
+                "created_by": item.get("createdBy", {})
+                .get("user", {})
+                .get("displayName", "Unknown"),
+                "created_datetime": item.get("createdDateTime", "Unknown"),
+                "last_modified_datetime": item.get("lastModifiedDateTime", "Unknown"),
+            }
+
+            if "folder" in item:
+                result["type"] = "folder"
+                result["child_count"] = item["folder"].get("childCount", 0)
+            elif "file" in item:
+                result["type"] = "file"
+                result["mime_type"] = item["file"].get("mimeType", "Unknown")
+
+            logger.info(f"Successfully retrieved metadata for path: '{item_path}'")
+            return json.dumps(result, indent=2)
+        except Exception as e:
+            logger.error(f"Error in get_item_metadata: {str(e)}")
+            raise

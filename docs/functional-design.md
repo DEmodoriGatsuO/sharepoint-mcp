@@ -85,6 +85,9 @@ All tools follow the same pattern:
 | `create_modern_page` | `POST /sites/{id}/pages` |
 | `create_news_post` | `POST /sites/{id}/pages` (news template) |
 | `get_document_content` | `GET /sites/{id}/drives/{driveId}/items/{itemId}/content` |
+| `list_folder_contents` | `GET /sites/{id}/drives/{driveId}/root/children` or `root:/{path}:/children` |
+| `get_document_by_path` | `GET /sites/{id}/drives/{driveId}/root:/{path}:/content` |
+| `get_item_metadata` | `GET /sites/{id}/drives/{driveId}/root:/{path}` |
 
 ### utils/graph_client.py — HTTP Client
 
