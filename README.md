@@ -3,19 +3,55 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.10+](https://img.shields.io/badge/Python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![MCP](https://img.shields.io/badge/MCP-Compatible-green.svg)](https://docs.anthropic.com/claude/docs/model-context-protocol)
+[![Built with Claude Code](https://img.shields.io/badge/Built%20with-Claude%20Code-blueviolet.svg)](https://claude.ai/claude-code)
+
 # SharePoint MCP Server
 
 > **DISCLAIMER**: This project is not affiliated with, endorsed by, or related to Microsoft Corporation. SharePoint and Microsoft Graph API are trademarks of Microsoft Corporation. This is an independent, community-driven project.
 
 SharePoint Model Context Protocol (MCP) server acts as a bridge that enables LLM applications (like Claude) to access content from your SharePoint site. With this project, you can use natural language to query documents, lists, and other content in your SharePoint site.
 
+---
+
+## Announcement — Active Development with Claude Code (February 25, 2026)
+
+**We are excited to announce that active development of this project has resumed as of February 25, 2026, powered by [Claude Code](https://claude.ai/claude-code) — Anthropic's agentic coding tool.**
+
+Starting today, all feature development, bug fixes, and improvements are driven by a structured, AI-assisted workflow:
+
+- **Transparent planning** — every task begins with a documented design in `.steering/`
+- **Consistent quality** — all changes pass `black`, `ruff`, and `pytest` before merge
+- **Global collaboration** — contributions from developers worldwide are welcome
+
+### What's coming
+
+We are actively planning and will be delivering improvements across:
+
+| Area | Planned Work |
+|------|-------------|
+| Tools | Expanded Graph API coverage (lists, pages, permissions) |
+| Authentication | Certificate-based auth support |
+| Performance | Pagination support for large libraries and lists |
+| Testing | Broader test coverage for all tools |
+| Documentation | Multilingual guides and usage examples |
+
+**Want to follow along or contribute?** Watch this repository and check the [`.steering/`](.steering/) directory for the latest task plans.
+
+---
+
 ## Features
 
-- **Browse Document Libraries**: View contents of SharePoint document libraries
-- **Access List Data**: Retrieve and manipulate SharePoint list data
-- **Retrieve Document Content**: Access content from specific documents
-- **SharePoint Search**: Search across your entire site
-- **Create List Items**: Add new items to SharePoint lists
+- **Get Site Information**: Retrieve name, description, URL, and metadata of your SharePoint site
+- **Browse Document Libraries**: List all document libraries (drives) in a site
+- **Retrieve Document Content**: Read and parse DOCX, PDF, XLSX, CSV, and TXT files
+- **SharePoint Search**: Full-text search across all content in your site
+- **Create & Update List Items**: Add or modify records in SharePoint lists
+- **Create Intelligent Lists**: Provision lists with AI-optimized schemas (projects, tasks, events, contacts)
+- **Create Advanced Document Libraries**: Set up libraries with rich metadata for contracts, reports, and more
+- **Upload Documents**: Push files directly into document libraries
+- **Create Modern Pages**: Publish beautiful SharePoint pages with generated content
+- **Create News Posts**: Publish news articles to your SharePoint site
+- **Create Sites**: Provision new SharePoint team sites programmatically
 
 ## Prerequisites
 

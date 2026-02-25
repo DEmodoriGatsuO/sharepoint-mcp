@@ -1,29 +1,32 @@
 """Content generation utilities for SharePoint MCP server."""
 
 import logging
-from typing import Dict, Any, List
+from typing import Dict, Any
 
 # Setup logging
 logger = logging.getLogger("content_generator")
 
+
 class ContentGenerator:
     """Generator for AI-enhanced content."""
-    
+
     @staticmethod
-    def generate_page_content(purpose: str, title: str, audience: str = "general") -> Dict[str, Any]:
+    def generate_page_content(
+        purpose: str, title: str, audience: str = "general"
+    ) -> Dict[str, Any]:
         """Generate page content based on purpose and audience.
-        
+
         Args:
             purpose: Purpose of the page (article, dashboard, landing, etc.)
             title: Title of the page
             audience: Target audience (general, executives, team, customers, etc.)
-        
+
         Returns:
             Dictionary with generated content sections
         """
         # In a real implementation, this could call an LLM to generate content
         # For now, we'll use predefined templates based on purpose and audience
-        
+
         if purpose.lower() == "welcome":
             return ContentGenerator._generate_welcome_page(title, audience)
         elif purpose.lower() == "dashboard":
@@ -36,22 +39,22 @@ class ContentGenerator:
             return ContentGenerator._generate_announcement_page(title, audience)
         else:
             return ContentGenerator._generate_general_page(title, audience)
-    
+
     @staticmethod
     def _generate_welcome_page(title: str, audience: str) -> Dict[str, Any]:
         """Generate a welcome page.
-        
+
         Args:
             title: Page title
             audience: Target audience
-        
+
         Returns:
             Content for a welcome page
         """
         # Adjust content based on audience
         intro_text = ""
         main_content = ""
-        
+
         if audience.lower() == "executives":
             intro_text = "Welcome to our executive portal. This site provides access to strategic resources and key performance indicators to help guide decision-making."
             main_content = """
@@ -112,7 +115,7 @@ Stay informed about the latest news, announcements, and updates.
 
 Access frequently used tools and resources with just one click.
 """
-        
+
         return {
             "title": title,
             "introduction": intro_text,
@@ -121,23 +124,23 @@ Access frequently used tools and resources with just one click.
             "layout_suggestion": "SingleColumnWithHeader",
             "image_suggestions": {
                 "url": "/api/placeholder/800/400",
-                "alt_text": "Welcome banner image"
-            }
+                "alt_text": "Welcome banner image",
+            },
         }
-    
+
     @staticmethod
     def _generate_dashboard_page(title: str, audience: str) -> Dict[str, Any]:
         """Generate a dashboard page.
-        
+
         Args:
             title: Page title
             audience: Target audience
-        
+
         Returns:
             Content for a dashboard page
         """
         intro_text = "This dashboard provides a comprehensive view of key metrics and information."
-        
+
         # Adjust content based on audience
         if audience.lower() == "executives":
             main_content = """
@@ -251,29 +254,29 @@ Access frequently used tools and resources with just one click.
     </div>
 </div>
 """
-        
+
         return {
             "title": title,
             "introduction": intro_text,
             "main_content": main_content,
             "conclusion": "This dashboard is updated regularly. Last update: Today",
             "layout_suggestion": "Dashboard",
-            "image_suggestions": None
+            "image_suggestions": None,
         }
-    
+
     @staticmethod
     def _generate_team_page(title: str, audience: str) -> Dict[str, Any]:
         """Generate a team page.
-        
+
         Args:
             title: Page title
             audience: Target audience
-        
+
         Returns:
             Content for a team page
         """
         intro_text = "Meet our talented team of professionals dedicated to excellence and innovation."
-        
+
         main_content = """
 ## Leadership Team
 
@@ -335,7 +338,7 @@ Access frequently used tools and resources with just one click.
     </div>
 </div>
 """
-        
+
         return {
             "title": title,
             "introduction": intro_text,
@@ -344,23 +347,23 @@ Access frequently used tools and resources with just one click.
             "layout_suggestion": "FullWidth",
             "image_suggestions": {
                 "url": "/api/placeholder/1200/400",
-                "alt_text": "Team working together"
-            }
+                "alt_text": "Team working together",
+            },
         }
-    
+
     @staticmethod
     def _generate_project_page(title: str, audience: str) -> Dict[str, Any]:
         """Generate a project page.
-        
+
         Args:
             title: Page title
             audience: Target audience
-        
+
         Returns:
             Content for a project page
         """
         intro_text = f"Welcome to the {title} project page. Here you'll find all the essential information about this project."
-        
+
         main_content = """
 ## Project Overview
 
@@ -435,7 +438,7 @@ This project aims to deliver [project objective] by [target date]. The initiativ
     <li><strong>Key Team Members:</strong> [Names and Roles]</li>
 </ul>
 """
-        
+
         return {
             "title": title,
             "introduction": intro_text,
@@ -444,23 +447,23 @@ This project aims to deliver [project objective] by [target date]. The initiativ
             "layout_suggestion": "TwoColumns",
             "image_suggestions": {
                 "url": "/api/placeholder/600/400",
-                "alt_text": "Project visualization"
-            }
+                "alt_text": "Project visualization",
+            },
         }
-    
+
     @staticmethod
     def _generate_announcement_page(title: str, audience: str) -> Dict[str, Any]:
         """Generate an announcement page.
-        
+
         Args:
             title: Page title
             audience: Target audience
-        
+
         Returns:
             Content for an announcement page
         """
         intro_text = "We have an important announcement to share with our organization."
-        
+
         main_content = """
 ## Announcement Details
 
@@ -497,7 +500,7 @@ If you have questions about this announcement, please:
 - Contact [name/department] at [contact information]
 - Review the FAQ document [link]
 """
-        
+
         return {
             "title": title,
             "introduction": intro_text,
@@ -506,23 +509,23 @@ If you have questions about this announcement, please:
             "layout_suggestion": "SingleColumnCentered",
             "image_suggestions": {
                 "url": "/api/placeholder/800/300",
-                "alt_text": "Announcement illustration"
-            }
+                "alt_text": "Announcement illustration",
+            },
         }
-    
+
     @staticmethod
     def _generate_general_page(title: str, audience: str) -> Dict[str, Any]:
         """Generate a general purpose page.
-        
+
         Args:
             title: Page title
             audience: Target audience
-        
+
         Returns:
             Content for a general page
         """
         intro_text = f"Welcome to the {title} page. This page provides information and resources related to {title}."
-        
+
         main_content = """
 ## Overview
 
@@ -568,7 +571,7 @@ This section provides an overview of key information related to this topic.
     </div>
 </div>
 """
-        
+
         return {
             "title": title,
             "introduction": intro_text,
@@ -577,18 +580,18 @@ This section provides an overview of key information related to this topic.
             "layout_suggestion": "TwoThirdsOneThird",
             "image_suggestions": {
                 "url": "/api/placeholder/800/300",
-                "alt_text": "Illustrative image for " + title
-            }
+                "alt_text": "Illustrative image for " + title,
+            },
         }
-    
+
     @staticmethod
     def generate_page_title(purpose: str, name: str) -> str:
         """Generate an appropriate page title based on purpose and name.
-        
+
         Args:
             purpose: Purpose of the page
             name: Base name for the page
-            
+
         Returns:
             Generated title
         """
@@ -601,9 +604,9 @@ This section provides an overview of key information related to this topic.
             "report": "Report: ",
             "guide": "Guide: ",
             "policy": "Policy: ",
-            "training": "Training: "
+            "training": "Training: ",
         }
-        
+
         purpose_suffixes = {
             "welcome": " Site",
             "dashboard": " Dashboard",
@@ -613,24 +616,24 @@ This section provides an overview of key information related to this topic.
             "report": " Summary",
             "guide": " Guide",
             "policy": " Policy",
-            "training": " Training Materials"
+            "training": " Training Materials",
         }
-        
+
         prefix = purpose_prefixes.get(purpose.lower(), "")
         suffix = purpose_suffixes.get(purpose.lower(), "")
-        
+
         # Clean the name and capitalize words
         clean_name = " ".join(word.capitalize() for word in name.strip().split())
-        
+
         return f"{prefix}{clean_name}{suffix}"
-    
+
     @staticmethod
     def map_purpose_to_template(purpose: str) -> str:
         """Map page purpose to an appropriate template.
-        
+
         Args:
             purpose: Purpose of the page
-            
+
         Returns:
             Template name suitable for the purpose
         """
@@ -643,7 +646,7 @@ This section provides an overview of key information related to this topic.
             "report": "Report",
             "guide": "Guide",
             "policy": "Article",
-            "training": "Training"
+            "training": "Training",
         }
-        
+
         return purpose_templates.get(purpose.lower(), "Article")
