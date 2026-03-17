@@ -3,12 +3,11 @@
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 import json
-import os
 import logging
 
 import msal
 import requests
-from config.settings import SHAREPOINT_CONFIG, TOKEN_CACHE_FILE
+from config.settings import SHAREPOINT_CONFIG
 
 # Set up logging
 logging.basicConfig(
@@ -254,46 +253,16 @@ async def get_auth_context() -> SharePointContext:
     # Validate configuration first
     validate_config()
 
-    # Set up token cache
-    cache = msal.SerializableTokenCache()
-
-    # Load existing cache file if it exists
-    if os.path.exists(TOKEN_CACHE_FILE):
-        try:
-            with open(TOKEN_CACHE_FILE, "r") as cache_file:
-                cache.deserialize(cache_file.read())
-            logger.info("Loaded token cache from file")
-
-            # Check if cache has a valid token
-            accounts = cache.find(msal.TokenCache.CredentialType.REFRESH_TOKEN)
-            if accounts:
-                logger.info("Found refresh token in cache, attempting to use it")
-        except Exception as e:
-            logger.warning(f"Error loading token cache: {e}")
-
-    # Create MSAL client application
+    # Create MSAL client application (token cache is in-memory only for security)
     app = msal.ConfidentialClientApplication(
         SHAREPOINT_CONFIG["client_id"],
         authority=f"https://login.microsoftonline.com/{SHAREPOINT_CONFIG['tenant_id']}",
         client_credential=SHAREPOINT_CONFIG["client_secret"],
-        token_cache=cache,
     )
 
-    # First try to get token silently from cache
-    result = None
-    accounts = app.get_accounts()
-    if accounts:
-        logger.info("Account found in cache, attempting silent token acquisition")
-        result = app.acquire_token_silent(
-            SHAREPOINT_CONFIG["scope"], account=accounts[0]
-        )
-
-    # If silent token acquisition fails, get new token
-    if not result:
-        logger.info(
-            "No token in cache or silent acquisition failed, acquiring new token"
-        )
-        result = app.acquire_token_for_client(scopes=SHAREPOINT_CONFIG["scope"])
+    # Acquire token using client credentials flow
+    logger.info("Acquiring new token via client credentials flow")
+    result = app.acquire_token_for_client(scopes=SHAREPOINT_CONFIG["scope"])
 
     # Raise error if token acquisition fails
     if "access_token" not in result:
@@ -319,14 +288,6 @@ async def get_auth_context() -> SharePointContext:
     # Log a preview of the token (for security, only partial token is shown)
     token_preview = f"{result['access_token'][:10]}...{result['access_token'][-10:]}"
     logger.info(f"Token acquired successfully: {token_preview}")
-
-    # Save token cache
-    try:
-        with open(TOKEN_CACHE_FILE, "w") as cache_file:
-            cache_file.write(cache.serialize())
-        logger.info("Token cache saved to file")
-    except Exception as e:
-        logger.warning(f"Error saving token cache: {e}")
 
     # Calculate token expiry (default is 1 hour)
     expiry = datetime.now() + timedelta(seconds=result.get("expires_in", 3600))
