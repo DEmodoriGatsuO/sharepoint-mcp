@@ -15,6 +15,7 @@
 | Authentication | `msal` (Microsoft Authentication Library) | >=1.20.0 |
 | HTTP Client | `requests` | >=2.28.0 |
 | Configuration | `python-dotenv` | >=0.21.0 |
+| HTTP Server | `uvicorn` (for SSE / streamable-http transports) | >=0.20.0 |
 
 ### Document Processing (Optional)
 
@@ -57,6 +58,9 @@ Defined in `.env` (see `.env.example`):
 | `CLIENT_SECRET` | Yes | Azure AD client secret |
 | `SITE_URL` | Yes | SharePoint site URL (`https://{tenant}.sharepoint.com/sites/{name}`) |
 | `DEBUG` | No | Enable debug logging (`True` / `False`, default: `False`) |
+| `MCP_TRANSPORT` | No | Transport protocol: `stdio` / `sse` / `streamable-http` (default: `stdio`) |
+| `MCP_HOST` | No | Bind host for HTTP transports (default: `0.0.0.0`) |
+| `MCP_PORT` | No | Bind port for HTTP transports (default: `8000`) |
 | `USERNAME` | No | User email (for delegated auth, not used in current implementation) |
 | `PASSWORD` | No | User password (for delegated auth, not used in current implementation) |
 
@@ -71,7 +75,7 @@ Defined in `.env` (see `.env.example`):
 | Token cache | File-based (`.token_cache`), single-process only |
 | Document size | PDF extraction limited to first 10 pages; CSV/Excel preview to first 50 rows |
 | Concurrency | Single-threaded async (FastMCP); no multi-process support |
-| Transport | MCP stdio transport (default); HTTP transport available via `mcp dev` |
+| Transport | `stdio` (default), `sse`, or `streamable-http` — selected via `--transport` flag or `MCP_TRANSPORT` env var |
 
 ---
 
@@ -105,11 +109,43 @@ The application requires the following **Application permissions** (admin consen
 
 ## Deployment
 
-### Run as MCP Server (stdio)
+### Run as MCP Server (stdio — default)
 
 ```bash
 python server.py
 ```
+
+### Run as HTTP Server (streamable-http)
+
+```bash
+python server.py --transport streamable-http --host 0.0.0.0 --port 8000
+# or via environment variables
+MCP_TRANSPORT=streamable-http MCP_PORT=8000 python server.py
+```
+
+### Run as HTTP Server (SSE)
+
+```bash
+python server.py --transport sse --host 0.0.0.0 --port 8000
+```
+
+### Run with Docker
+
+```bash
+# Build the image
+docker build -t sharepoint-mcp .
+
+# Run with environment file
+docker run --env-file .env -p 8000:8000 sharepoint-mcp
+```
+
+### Run with Docker Compose
+
+```bash
+docker-compose up
+```
+
+The `docker-compose.yml` loads credentials from `.env` and exposes port 8000.
 
 ### Run in Development Mode (MCP Inspector)
 
