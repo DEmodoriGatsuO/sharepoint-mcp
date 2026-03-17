@@ -1,5 +1,7 @@
 """Main implementation of the SharePoint MCP Server."""
 
+import argparse
+import os
 import sys
 import logging
 from contextlib import asynccontextmanager
@@ -60,9 +62,33 @@ register_site_tools(mcp)
 
 def main():
     """Main entry point for the SharePoint MCP server."""
+    parser = argparse.ArgumentParser(description="SharePoint MCP Server")
+    parser.add_argument(
+        "--transport",
+        choices=["stdio", "sse", "streamable-http"],
+        default=os.getenv("MCP_TRANSPORT", "stdio"),
+        help="Transport protocol (default: stdio)",
+    )
+    parser.add_argument(
+        "--host",
+        default=os.getenv("MCP_HOST", "0.0.0.0"),
+        help="Bind host for HTTP transports (default: 0.0.0.0)",
+    )
+    parser.add_argument(
+        "--port",
+        type=int,
+        default=int(os.getenv("MCP_PORT", "8000")),
+        help="Bind port for HTTP transports (default: 8000)",
+    )
+    args = parser.parse_args()
+
     try:
-        logger.info(f"Starting {APP_NAME} server...")
-        mcp.run()
+        logger.info(f"Starting {APP_NAME} server (transport={args.transport})...")
+        if args.transport != "stdio":
+            mcp.settings.host = args.host
+            mcp.settings.port = args.port
+            logger.info(f"HTTP server binding to {args.host}:{args.port}")
+        mcp.run(transport=args.transport)
     except Exception as e:
         logger.error(f"Error occurred during MCP server startup: {e}")
         raise

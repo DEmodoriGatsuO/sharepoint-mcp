@@ -54,3 +54,6 @@ htmlcov/
 .pytest_cache/
 coverage.xml
 *.cover
+
+# Claude
+.claude/

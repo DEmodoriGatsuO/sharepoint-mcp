@@ -98,7 +98,14 @@ Follow these steps to get the SharePoint MCP Server up and running quickly:
 
 5. **Start the Server**
    ```bash
+   # stdio (default — for Claude Desktop / MCP Inspector)
    python server.py
+
+   # HTTP streamable-http (for web services and Copilot agents)
+   python server.py --transport streamable-http --port 8000
+
+   # Docker
+   docker-compose up
    ```
 
 ## Installation
@@ -137,6 +144,36 @@ cp .env.example .env
 
 ## Usage
 
+### Run Directly (stdio — default)
+
+```bash
+python server.py
+```
+
+### Run as HTTP Server
+
+```bash
+# streamable-http (recommended for web services and Copilot agents)
+python server.py --transport streamable-http --host 0.0.0.0 --port 8000
+
+# SSE
+python server.py --transport sse --host 0.0.0.0 --port 8000
+
+# Configure via environment variables instead of flags
+MCP_TRANSPORT=streamable-http MCP_PORT=8000 python server.py
+```
+
+### Run with Docker
+
+```bash
+# Build and start (defaults to streamable-http on port 8000)
+docker-compose up
+
+# Or build and run manually
+docker build -t sharepoint-mcp .
+docker run --env-file .env -p 8000:8000 sharepoint-mcp
+```
+
 ### Run in Development Mode
 
 ```bash
@@ -147,12 +184,6 @@ mcp dev server.py
 
 ```bash
 mcp install server.py --name "SharePoint Assistant"
-```
-
-### Run Directly
-
-```bash
-python server.py
 ```
 
 ## Advanced Usage

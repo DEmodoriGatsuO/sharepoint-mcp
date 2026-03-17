@@ -26,6 +26,7 @@ setup(
         "requests>=2.28.0",
         "pandas>=1.5.0",
         "python-dotenv>=0.21.0",
+        "uvicorn>=0.20.0",
     ],
     extras_require={
         "dev": [
