@@ -12,6 +12,9 @@ logging.basicConfig(
 )
 logger = logging.getLogger("graph_client")
 
+LARGE_FILE_THRESHOLD = 4 * 1024 * 1024  # 4 MB
+UPLOAD_CHUNK_SIZE = 5 * 1024 * 1024  # 5 MB — must be a multiple of 320 KB
+
 
 class GraphClient:
     """Client for interacting with Microsoft Graph API."""
@@ -220,6 +223,52 @@ class GraphClient:
         if response.status_code == 204:
             return {"status": "success"}
         return response.json()
+
+    async def _upload_in_chunks(
+        self,
+        upload_url: str,
+        file_content: bytes,
+        content_type: str = None,
+    ) -> Dict[str, Any]:
+        """Upload file content to an upload session URL in chunks.
+
+        Args:
+            upload_url: The uploadUrl returned by createUploadSession
+            file_content: Complete file content as bytes
+            content_type: MIME type of the file
+
+        Returns:
+            Final response from the completed upload
+        """
+        total_size = len(file_content)
+        start = 0
+        result: Dict[str, Any] = {}
+
+        while start < total_size:
+            end = min(start + UPLOAD_CHUNK_SIZE - 1, total_size - 1)
+            chunk = file_content[start : end + 1]
+
+            headers = {
+                "Content-Length": str(len(chunk)),
+                "Content-Range": f"bytes {start}-{end}/{total_size}",
+            }
+            if content_type:
+                headers["Content-Type"] = content_type
+
+            logger.debug(f"Uploading chunk: bytes {start}-{end}/{total_size}")
+            response = requests.put(upload_url, headers=headers, data=chunk)
+
+            if response.status_code not in (200, 201, 202):
+                raise Exception(
+                    f"Chunk upload failed: {response.status_code} - {response.text}"
+                )
+
+            if response.status_code in (200, 201):
+                result = response.json()
+
+            start = end + 1
+
+        return result
 
     async def get_site_info(self, domain: str, site_name: str) -> Dict[str, Any]:
         """Get SharePoint site information.
@@ -655,17 +704,33 @@ class GraphClient:
             f"Uploading document {file_name} to {folder_path if folder_path else 'root'}"
         )
 
-        # For small files, use simple upload
-        if len(file_content) < 4 * 1024 * 1024:  # 4 MB
+        # Small files: simple PUT upload
+        if len(file_content) < LARGE_FILE_THRESHOLD:
             return await self.upload_file(endpoint, file_content, content_type)
+
+        # Large files: resumable upload session
+        if folder_path and folder_path != "/":
+            session_endpoint = f"sites/{site_id}/drives/{drive_id}/root:/{folder_path}/{file_name}:/createUploadSession"
         else:
-            # For larger files, we need to use upload session (not implemented for simplicity)
-            # This would involve creating an upload session and uploading the file in chunks
-            logger.warning("Large file upload (>4MB) should use upload session.")
-            logger.warning(
-                "Implementing simple upload instead, which might fail for large files."
+            session_endpoint = f"sites/{site_id}/drives/{drive_id}/root:/{file_name}:/createUploadSession"
+
+        session_url = f"{self.base_url}/{session_endpoint}"
+        logger.info(
+            f"File size {len(file_content)} bytes exceeds threshold; using upload session"
+        )
+        session_response = requests.post(
+            session_url, headers=self.context.headers, json={}
+        )
+        if session_response.status_code != 200:
+            raise Exception(
+                f"Failed to create upload session: {session_response.status_code} - {session_response.text}"
             )
-            return await self.upload_file(endpoint, file_content, content_type)
+
+        upload_url = session_response.json().get("uploadUrl")
+        if not upload_url:
+            raise Exception("Upload session response did not contain uploadUrl")
+
+        return await self._upload_in_chunks(upload_url, file_content, content_type)
 
     async def create_folder_in_library(
         self, site_id: str, drive_id: str, folder_path: str
