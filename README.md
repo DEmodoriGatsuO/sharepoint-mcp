@@ -9,254 +9,202 @@
 
 > **DISCLAIMER**: This project is not affiliated with, endorsed by, or related to Microsoft Corporation. SharePoint and Microsoft Graph API are trademarks of Microsoft Corporation. This is an independent, community-driven project.
 
-SharePoint Model Context Protocol (MCP) server acts as a bridge that enables LLM applications (like Claude) to access content from your SharePoint site. With this project, you can use natural language to query documents, lists, and other content in your SharePoint site.
-
----
-
-## Announcement — Active Development with Claude Code (February 25, 2026)
-
-**We are excited to announce that active development of this project has resumed as of February 25, 2026, powered by [Claude Code](https://claude.ai/claude-code) — Anthropic's agentic coding tool.**
-
-Starting today, all feature development, bug fixes, and improvements are driven by a structured, AI-assisted workflow:
-
-- **Transparent planning** — every task begins with a documented design in `.steering/`
-- **Consistent quality** — all changes pass `black`, `ruff`, and `pytest` before merge
-- **Global collaboration** — contributions from developers worldwide are welcome
-
-### What's coming
-
-We are actively planning and will be delivering improvements across:
-
-| Area | Planned Work |
-|------|-------------|
-| Tools | Expanded Graph API coverage (lists, pages, permissions) |
-| Authentication | Certificate-based auth support |
-| Performance | Pagination support for large libraries and lists |
-| Testing | Broader test coverage for all tools |
-| Documentation | Multilingual guides and usage examples |
-
-**Want to follow along or contribute?** Watch this repository and check the [`.steering/`](.steering/) directory for the latest task plans.
+SharePoint MCP Server is a [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) server that connects LLM applications such as Claude to your SharePoint site via the Microsoft Graph API. Use natural language to query documents, manage lists, upload files, and more — directly from your AI assistant.
 
 ---
 
 ## Features
 
-- **Get Site Information**: Retrieve name, description, URL, and metadata of your SharePoint site
-- **Browse Document Libraries**: List all document libraries (drives) in a site
-- **Retrieve Document Content**: Read and parse DOCX, PDF, XLSX, CSV, and TXT files
-- **SharePoint Search**: Full-text search across all content in your site
-- **Create & Update List Items**: Add or modify records in SharePoint lists
-- **Create Intelligent Lists**: Provision lists with AI-optimized schemas (projects, tasks, events, contacts)
-- **Create Advanced Document Libraries**: Set up libraries with rich metadata for contracts, reports, and more
-- **Upload Documents**: Push files directly into document libraries
-- **Create Modern Pages**: Publish beautiful SharePoint pages with generated content
-- **Create News Posts**: Publish news articles to your SharePoint site
-- **Create Sites**: Provision new SharePoint team sites programmatically
+| Category | Capability |
+|----------|------------|
+| **Site** | Get site information |
+| **Libraries** | Browse document libraries, list folder contents |
+| **Documents** | Read DOCX, PDF, XLSX, CSV, TXT; browse by path; get item metadata; upload files |
+| **Search** | Full-text search across all site content |
+| **Lists** | Create lists with AI-optimized schemas; create, update list items |
+| **Pages** | Create modern pages and news posts |
+| **Provisioning** | Create new SharePoint sites and advanced document libraries |
+| **Transport** | stdio (local), SSE, streamable-http (web / Docker) |
+
+---
 
 ## Prerequisites
 
 - Python 3.10 or higher
-- Access to a SharePoint site
-- Microsoft Azure AD application registration (for authentication)
+- A SharePoint site with Microsoft 365
+- An Azure AD application registration with the required Graph API permissions (see [docs/auth_guide.md](docs/auth_guide.md))
+
+---
 
 ## Quickstart
 
-Follow these steps to get the SharePoint MCP Server up and running quickly:
-
-1. **Prerequisites**
-   - Ensure you have Python 3.10+ installed
-   - An Azure AD application with proper permissions (see docs/auth_guide.md)
-
-2. **Installation**
-   ```bash
-   # Install from GitHub
-   pip install git+https://github.com/DEmodoriGatsuO/sharepoint-mcp.git
-
-   # Or install in development mode
-   git clone https://github.com/DEmodoriGatsuO/sharepoint-mcp.git
-   cd sharepoint-mcp
-   pip install -e .
-   ```
-
-3. **Configuration**
-   ```bash
-   # Copy the example configuration
-   cp .env.example .env
-   
-   # Edit the .env file with your details
-   nano .env
-   ```
-
-4. **Run the Diagnostic Tools**
-   ```bash
-   # Check your configuration
-   python config_checker.py
-   
-   # Test authentication
-   python auth-diagnostic.py
-   ```
-
-5. **Start the Server**
-   ```bash
-   # stdio (default — for Claude Desktop / MCP Inspector)
-   python server.py
-
-   # HTTP streamable-http (for web services and Copilot agents)
-   python server.py --transport streamable-http --port 8000
-
-   # Docker
-   docker-compose up
-   ```
-
-## Installation
-
-1. Clone the repository:
+### 1. Clone and install
 
 ```bash
 git clone https://github.com/DEmodoriGatsuO/sharepoint-mcp.git
 cd sharepoint-mcp
-```
 
-2. Create and activate a virtual environment:
-
-```bash
 python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-```
+source venv/bin/activate  # Windows: venv\Scripts\activate
 
-3. Install dependencies:
-
-```bash
 pip install -r requirements.txt
 ```
 
-4. Set up environment variables:
+### 2. Configure
 
 ```bash
 cp .env.example .env
-# Edit the .env file with your authentication details
+# Edit .env with your Azure AD credentials and SharePoint site URL
 ```
 
-## Configuration
+Required variables in `.env`:
 
-1. Register an application in Azure AD and grant necessary permissions (see docs/auth_guide.md)
-2. Configure your authentication information and SharePoint site URL in the `.env` file
+| Variable | Description |
+|----------|-------------|
+| `TENANT_ID` | Azure AD tenant ID |
+| `CLIENT_ID` | Azure AD application (client) ID |
+| `CLIENT_SECRET` | Azure AD client secret |
+| `SITE_URL` | SharePoint site URL (`https://{tenant}.sharepoint.com/sites/{name}`) |
+
+### 3. Verify your setup (optional)
+
+```bash
+python config_checker.py   # Validate configuration
+python auth-diagnostic.py  # Test authentication
+```
+
+### 4. Start the server
+
+```bash
+# stdio — default, for Claude Desktop / MCP Inspector
+python server.py
+
+# HTTP streamable-http — for web services and Copilot agents
+python server.py --transport streamable-http --port 8000
+
+# Docker
+docker-compose up
+```
+
+---
 
 ## Usage
 
-### Run Directly (stdio — default)
+### Claude Desktop
 
-```bash
-python server.py
-```
-
-### Run as HTTP Server
-
-```bash
-# streamable-http (recommended for web services and Copilot agents)
-python server.py --transport streamable-http --host 0.0.0.0 --port 8000
-
-# SSE
-python server.py --transport sse --host 0.0.0.0 --port 8000
-
-# Configure via environment variables instead of flags
-MCP_TRANSPORT=streamable-http MCP_PORT=8000 python server.py
-```
-
-### Run with Docker
-
-```bash
-# Build and start (defaults to streamable-http on port 8000)
-docker-compose up
-
-# Or build and run manually
-docker build -t sharepoint-mcp .
-docker run --env-file .env -p 8000:8000 sharepoint-mcp
-```
-
-### Run in Development Mode
-
-```bash
-mcp dev server.py
-```
-
-### Install in Claude Desktop
+Install the server into Claude Desktop:
 
 ```bash
 mcp install server.py --name "SharePoint Assistant"
 ```
 
-## Advanced Usage
+Or add it manually to `claude_desktop_config.json`:
 
-### Handling Document Content
-
-```python
-# Example of retrieving document content
-import requests
-
-# Get document content
-response = requests.get(
-    "http://localhost:8080/sharepoint-mcp/document/Shared%20Documents/report.docx", 
-    headers={"X-MCP-Auth": "your_auth_token"}
-)
-
-# Process content
-if response.status_code == 200:
-    document_content = response.json()
-    print(f"Document name: {document_content['name']}")
-    print(f"Size: {document_content['size']} bytes")
-```
-
-### Working with SharePoint Lists
-
-```python
-# Example of retrieving list data
-import requests
-import json
-
-# Get list items
-response = requests.get(
-    "http://localhost:8080/sharepoint-mcp/list/Tasks", 
-    headers={"X-MCP-Auth": "your_auth_token"}
-)
-
-# Create a new list item
-new_item = {
-    "Title": "Review quarterly report",
-    "Status": "Not Started",
-    "DueDate": "2025-05-01"
+```json
+{
+  "mcpServers": {
+    "sharepoint": {
+      "command": "python",
+      "args": ["/absolute/path/to/sharepoint-mcp/server.py"],
+      "env": {
+        "TENANT_ID": "...",
+        "CLIENT_ID": "...",
+        "CLIENT_SECRET": "...",
+        "SITE_URL": "..."
+      }
+    }
+  }
 }
-
-create_response = requests.post(
-    "http://localhost:8080/sharepoint-mcp/list/Tasks", 
-    headers={
-        "X-MCP-Auth": "your_auth_token",
-        "Content-Type": "application/json"
-    },
-    data=json.dumps(new_item)
-)
 ```
 
-## Integrating with Claude
+### MCP Inspector (development)
 
-See the documentation in [docs/usage.md](docs/usage.md) for detailed examples of how to use this server with Claude and other LLM applications.
+```bash
+mcp dev server.py
+```
+
+### HTTP Server
+
+```bash
+# streamable-http (recommended for Copilot agents and web clients)
+python server.py --transport streamable-http --host 0.0.0.0 --port 8000
+
+# SSE
+python server.py --transport sse --host 0.0.0.0 --port 8000
+
+# Via environment variables
+MCP_TRANSPORT=streamable-http MCP_PORT=8000 python server.py
+```
+
+### Docker
+
+```bash
+# Build and start (defaults to streamable-http on port 8000)
+docker-compose up
+
+# Or run manually
+docker build -t sharepoint-mcp .
+docker run --env-file .env -p 8000:8000 sharepoint-mcp
+```
+
+---
+
+## Available Tools
+
+The following MCP tools are exposed to the LLM:
+
+| Tool | Description |
+|------|-------------|
+| `get_site_info` | Get name, description, URL, and metadata of the SharePoint site |
+| `list_document_libraries` | List all document libraries (drives) in the site |
+| `list_folder_contents` | Browse files and folders within a document library by path |
+| `get_document_content` | Read and parse DOCX, PDF, XLSX, CSV, or TXT files |
+| `get_document_by_path` | Retrieve document content by file path |
+| `get_item_metadata` | Get metadata for a file or folder |
+| `search_sharepoint` | Full-text search across all content in the site |
+| `upload_document` | Upload a file to a document library |
+| `create_list_item` | Create a new item in a SharePoint list |
+| `update_list_item` | Update an existing item in a SharePoint list |
+| `create_intelligent_list` | Provision a list with an AI-optimized schema |
+| `create_advanced_document_library` | Create a document library with rich metadata |
+| `create_modern_page` | Publish a modern SharePoint page |
+| `create_news_post` | Publish a news article to the site |
+| `create_sharepoint_site` | Provision a new SharePoint team site |
+
+For detailed usage examples and example prompts, see [docs/usage.md](docs/usage.md).
+
+---
 
 ## Monitoring and Troubleshooting
 
 ### Logs
 
-The server logs to stdout by default. Set `DEBUG=True` in your `.env` file to enable verbose logging.
+The server writes logs to stdout. Set `DEBUG=True` in `.env` to enable verbose logging.
 
 ### Common Issues
 
-- **Authentication Failures**: Run `python auth-diagnostic.py` to diagnose issues
-- **Permission Errors**: Make sure your Azure AD app has the required permissions
-- **Token Issues**: Use `python token-decoder.py` to analyze your token's claims
+| Symptom | Resolution |
+|---------|------------|
+| Authentication failure | Run `python auth-diagnostic.py` to diagnose |
+| Permission errors | Verify your Azure AD app has the required Graph API permissions |
+| Token issues | Run `python token-decoder.py` to inspect token claims |
 
-## License
-
-This project is released under the MIT License. See the LICENSE file for details.
+---
 
 ## Contributing
 
-Contributions are welcome. Please open an issue first to discuss what you would like to change before making major modifications. See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+Contributions are welcome. Please open an issue first to discuss significant changes. See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+
+All contributions must pass the quality checks before merge:
+
+```bash
+black .       # Formatting
+ruff check .  # Linting
+pytest        # Tests
+```
+
+---
+
+## License
+
+Released under the MIT License. See [LICENSE](LICENSE) for details.
