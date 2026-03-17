@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Refactored
+
+- **Split `utils/graph_client.py` into mixin modules**: The 1,350-line monolithic class has
+  been decomposed into five focused mixin files (`_graph_http.py`, `_graph_site_ops.py`,
+  `_graph_list_ops.py`, `_graph_page_ops.py`, `_graph_drive_ops.py`) plus a constants module
+  (`_graph_constants.py`). `GraphClient` is now a 30-line facade that inherits all mixins.
+  All existing import paths are unchanged.
+- **Split `tools/site_tools.py` into domain modules**: The 693-line tool registration file
+  has been decomposed into `read_tools.py` (7 tools), `write_tools.py` (3 tools), and
+  `provisioning_tools.py` (5 tools), with a shared `_tool_helpers.py` for the `_check_auth`
+  helper. `site_tools.py` is now a 10-line delegator. `server.py` is unchanged.
+
 ### Added
 
 - **Resumable upload for large files** (`utils/graph_client.py`): Files ≥ 4 MB now use
