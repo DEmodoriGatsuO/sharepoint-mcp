@@ -32,9 +32,6 @@ SHAREPOINT_CONFIG = {
 GRAPH_API_VERSION = "v1.0"
 GRAPH_BASE_URL = f"https://graph.microsoft.com/{GRAPH_API_VERSION}"
 
-# Token settings
-TOKEN_CACHE_FILE = ".token_cache"
-
 # Document processing settings
 DOCUMENT_PROCESSING = {
     "max_text_preview_length": 5000,  # Maximum characters for text preview
