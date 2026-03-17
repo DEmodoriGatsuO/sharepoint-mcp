@@ -7,3 +7,4 @@ PyPDF2>=3.0.0
 openpyxl>=3.1.0
 python-dotenv>=0.21.0
 mcp[cli]
+uvicorn>=0.20.0
