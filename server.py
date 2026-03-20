@@ -38,11 +38,11 @@ mcp = FastMCP(APP_NAME, lifespan=sharepoint_lifespan)
 from tools.site_tools import register_site_tools
 register_site_tools(mcp)
 
-app = mcp.streamable_http_app()
+# Patch transport security before creating app
+import mcp.server.transport_security as _ts
+_ts._check_host = lambda *args, **kwargs: None
 
-# Patch transport security to allow Railway host
-from mcp.server import transport_security
-transport_security.ALLOWED_HOSTS = None
+app = mcp.streamable_http_app()
 
 if __name__ == "__main__":
     import uvicorn
