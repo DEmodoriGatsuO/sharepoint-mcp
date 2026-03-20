@@ -36,4 +36,11 @@ async def sharepoint_lifespan(server: FastMCP) -> AsyncIterator[SharePointContex
 mcp = FastMCP(APP_NAME, lifespan=sharepoint_lifespan)
 
 from tools.site_tools import register_site_tools
-regi
+register_site_tools(mcp)
+
+app = mcp.streamable_http_app()
+
+if __name__ == "__main__":
+    import uvicorn
+    port = int(os.getenv("MCP_PORT", "8000"))
+    uvicorn.run(app, host="0.0.0.0", port=port)
