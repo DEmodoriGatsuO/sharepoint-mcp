@@ -1,5 +1,6 @@
 """SharePoint read-only tools."""
 
+import base64
 import json
 import logging
 
@@ -294,4 +295,45 @@ def register_read_tools(mcp: FastMCP):
             return json.dumps(result, indent=2)
         except Exception as e:
             logger.error(f"Error in get_item_metadata: {str(e)}")
+            raise
+
+    @mcp.tool()
+    async def download_file(
+        ctx: Context, site_id: str, drive_id: str, item_id: str, filename: str
+    ) -> str:
+        """Download a file from SharePoint and return its content as base64.
+
+        Use this to retrieve binary files (docx, xlsx, pdf, etc.) so they can
+        be edited and re-uploaded. Pair with upload_document to complete edits.
+
+        Args:
+            site_id: ID of the site
+            drive_id: ID of the document library
+            item_id: ID of the file
+            filename: Name of the file (used for logging)
+        """
+        logger.info(f"Tool called: download_file for file: {filename}")
+        try:
+            sp_ctx = ctx.request_context.lifespan_context
+            _check_auth(sp_ctx)
+            await refresh_token_if_needed(sp_ctx)
+            graph_client = GraphClient(sp_ctx)
+
+            content = await graph_client.get_document_content(
+                site_id, drive_id, item_id
+            )
+            encoded = base64.b64encode(content).decode("utf-8")
+            logger.info(
+                f"Successfully downloaded file: {filename} ({len(content)} bytes)"
+            )
+            return json.dumps(
+                {
+                    "filename": filename,
+                    "size_bytes": len(content),
+                    "content_base64": encoded,
+                },
+                indent=2,
+            )
+        except Exception as e:
+            logger.error(f"Error in download_file: {str(e)}")
             raise
