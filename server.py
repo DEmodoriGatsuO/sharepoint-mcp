@@ -9,6 +9,7 @@ from collections.abc import AsyncIterator
 from datetime import datetime, timedelta
 
 from mcp.server.fastmcp import FastMCP
+from starlette.middleware.trustedhost import TrustedHostMiddleware
 
 from auth.sharepoint_auth import SharePointContext, get_auth_context
 from config.settings import APP_NAME, DEBUG
@@ -55,6 +56,7 @@ async def sharepoint_lifespan(server: FastMCP) -> AsyncIterator[SharePointContex
 
 # Create MCP server at module level so CLI can find it
 mcp = FastMCP(APP_NAME, lifespan=sharepoint_lifespan)
+mcp.app.add_middleware(TrustedHostMiddleware, allowed_hosts=["*"])
 
 # Register tools
 register_site_tools(mcp)
