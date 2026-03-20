@@ -33,8 +33,16 @@ async def sharepoint_lifespan(server: FastMCP) -> AsyncIterator[SharePointContex
     finally:
         logger.info("Ending SharePoint connection...")
 
-mcp = FastMCP(APP_NAME, lifespan=sharepoint_lifespan)
+from mcp.server.transport_security import TransportSecuritySettings
 
+mcp = FastMCP(
+    APP_NAME,
+    lifespan=sharepoint_lifespan,
+    transport_security=TransportSecuritySettings(
+        allowed_hosts=["sharepoint-mcp-production.up.railway.app"],
+        allowed_origins=["https://sharepoint-mcp-production.up.railway.app"],
+    )
+)
 from tools.site_tools import register_site_tools
 register_site_tools(mcp)
 
