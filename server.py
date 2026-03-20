@@ -40,6 +40,10 @@ register_site_tools(mcp)
 
 app = mcp.streamable_http_app()
 
+# Patch transport security to allow Railway host
+from mcp.server import transport_security
+transport_security.ALLOWED_HOSTS = None
+
 if __name__ == "__main__":
     import uvicorn
     port = int(os.getenv("MCP_PORT", "8000"))
