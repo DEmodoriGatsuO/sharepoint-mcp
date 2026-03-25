@@ -28,24 +28,18 @@ async def sharepoint_lifespan(server: FastMCP) -> AsyncIterator[SharePointContex
     logger.info("Initializing SharePoint connection...")
 
     try:
-        # Get SharePoint authentication context
         logger.debug("Attempting to get authentication context...")
         context = await get_auth_context()
         logger.info(f"Authentication successful. Token expiry: {context.token_expiry}")
-
-        # Yield context for use in the application
         yield context
 
     except Exception as e:
         logger.error(f"Error during SharePoint authentication: {e}")
-
-        # Create error context
         error_context = SharePointContext(
             access_token="error",
-            token_expiry=datetime.now() + timedelta(seconds=10),  # Short expiry
+            token_expiry=datetime.now() + timedelta(seconds=10),
             graph_url="https://graph.microsoft.com/v1.0",
         )
-
         logger.warning("Using error context due to authentication failure")
         yield error_context
 
