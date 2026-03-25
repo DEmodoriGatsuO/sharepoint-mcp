@@ -1,26 +1,38 @@
 """Main implementation of the SharePoint MCP Server."""
+
+import argparse
 import os
+import sys
 import logging
 from contextlib import asynccontextmanager
 from collections.abc import AsyncIterator
 from datetime import datetime, timedelta
+
 from mcp.server.fastmcp import FastMCP
+
 from auth.sharepoint_auth import SharePointContext, get_auth_context
 from config.settings import APP_NAME, DEBUG
+from tools.site_tools import register_site_tools
 
+# Set logging level
 logging_level = logging.DEBUG if DEBUG else logging.INFO
 logging.basicConfig(
     level=logging_level, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger("sharepoint_mcp")
 
+
 @asynccontextmanager
 async def sharepoint_lifespan(server: FastMCP) -> AsyncIterator[SharePointContext]:
+    """Manage SharePoint connection lifecycle."""
     logger.info("Initializing SharePoint connection...")
+
     try:
+        logger.debug("Attempting to get authentication context...")
         context = await get_auth_context()
         logger.info(f"Authentication successful. Token expiry: {context.token_expiry}")
         yield context
+
     except Exception as e:
         logger.error(f"Error during SharePoint authentication: {e}")
         error_context = SharePointContext(
@@ -30,29 +42,56 @@ async def sharepoint_lifespan(server: FastMCP) -> AsyncIterator[SharePointContex
         )
         logger.warning("Using error context due to authentication failure")
         yield error_context
+
     finally:
         logger.info("Ending SharePoint connection...")
 
-from mcp.server.transport_security import TransportSecuritySettings
 
-mcp = FastMCP(
-    APP_NAME,
-    lifespan=sharepoint_lifespan,
-    transport_security=TransportSecuritySettings(
-        allowed_hosts=["sharepoint-mcp-production.up.railway.app"],
-        allowed_origins=["https://sharepoint-mcp-production.up.railway.app"],
-    )
-)
-from tools.site_tools import register_site_tools
+# Create MCP server at module level so CLI can find it
+mcp = FastMCP(APP_NAME, lifespan=sharepoint_lifespan)
+
+# Register tools
 register_site_tools(mcp)
 
-# Patch transport security before creating app
-import mcp.server.transport_security as _ts
-_ts._check_host = lambda *args, **kwargs: None
 
-app = mcp.streamable_http_app()
+def main():
+    """Main entry point for the SharePoint MCP server."""
+    parser = argparse.ArgumentParser(description="SharePoint MCP Server")
+    parser.add_argument(
+        "--transport",
+        choices=["stdio", "sse", "streamable-http"],
+        default=os.getenv("MCP_TRANSPORT", "stdio"),
+        help="Transport protocol (default: stdio)",
+    )
+    parser.add_argument(
+        "--host",
+        default=os.getenv("MCP_HOST", "0.0.0.0"),
+        help="Bind host for HTTP transports (default: 0.0.0.0)",
+    )
+    parser.add_argument(
+        "--port",
+        type=int,
+        default=int(os.getenv("MCP_PORT", "8000")),
+        help="Bind port for HTTP transports (default: 8000)",
+    )
+    args = parser.parse_args()
 
+    try:
+        logger.info(f"Starting {APP_NAME} server (transport={args.transport})...")
+        if args.transport != "stdio":
+            mcp.settings.host = args.host
+            mcp.settings.port = args.port
+            logger.info(f"HTTP server binding to {args.host}:{args.port}")
+        mcp.run(transport=args.transport)
+    except Exception as e:
+        logger.error(f"Error occurred during MCP server startup: {e}")
+        raise
+
+
+# Main execution
 if __name__ == "__main__":
-    import uvicorn
-    port = int(os.getenv("MCP_PORT", "8000"))
-    uvicorn.run(app, host="0.0.0.0", port=port)
+    try:
+        main()
+    except Exception as e:
+        logger.error(f"Fatal error in SharePoint MCP server: {e}")
+        sys.exit(1)
