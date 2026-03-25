@@ -1,5 +1,6 @@
 """SharePoint write tools (CRUD on existing structures)."""
 
+import base64
 import json
 import logging
 from typing import Dict, Any
@@ -23,7 +24,7 @@ def register_write_tools(mcp: FastMCP):
         drive_id: str,
         folder_path: str,
         file_name: str,
-        file_content: bytes,
+        file_content: str,
         content_type: str = None,
     ) -> str:
         """Upload a document to a SharePoint document library.
@@ -33,7 +34,8 @@ def register_write_tools(mcp: FastMCP):
             drive_id: ID of the document library
             folder_path: Path to the folder (e.g. "General" or "Documents/Folder1")
             file_name: Name of the file to create
-            file_content: Content of the file as bytes
+            file_content: Base64-encoded file content. Use the content_base64 field
+                returned by download_file directly.
             content_type: MIME type of the file
 
         Returns:
@@ -46,8 +48,15 @@ def register_write_tools(mcp: FastMCP):
             await refresh_token_if_needed(sp_ctx)
             graph_client = GraphClient(sp_ctx)
 
+            try:
+                file_bytes = base64.b64decode(file_content)
+            except Exception as e:
+                raise ValueError(
+                    f"file_content must be valid base64-encoded data: {e}"
+                )
+
             doc_info = await graph_client.upload_document(
-                site_id, drive_id, folder_path, file_name, file_content, content_type
+                site_id, drive_id, folder_path, file_name, file_bytes, content_type
             )
             logger.info(f"Successfully uploaded document: {file_name}")
             return json.dumps(doc_info, indent=2)
