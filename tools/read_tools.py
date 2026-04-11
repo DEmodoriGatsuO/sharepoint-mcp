@@ -146,6 +146,92 @@ def register_read_tools(mcp: FastMCP):
             raise
 
     @mcp.tool()
+    async def get_lists(ctx: Context, site_id: str) -> str:
+        """List all SharePoint lists (and document libraries) in a site.
+
+        Returns list names, IDs, and templates so you can query items.
+        For subsites, use the compound site ID format: siteCollectionId,webId
+
+        Args:
+            site_id: The site ID. For subsites use compound format
+                (e.g. "f474e3b9-...,0b580fc8-...")
+        """
+        logger.info(f"Tool called: get_lists for site: {site_id}")
+        try:
+            sp_ctx = ctx.request_context.lifespan_context
+            _check_auth(sp_ctx)
+            await refresh_token_if_needed(sp_ctx)
+            graph_client = GraphClient(sp_ctx)
+
+            result = await graph_client.get_lists(site_id)
+            lists = result.get("value", [])
+            formatted = [
+                {
+                    "id": lst.get("id", "Unknown"),
+                    "name": lst.get("displayName", "Unknown"),
+                    "description": lst.get("description", ""),
+                    "web_url": lst.get("webUrl", "Unknown"),
+                    "template": lst.get("list", {}).get("template", "Unknown"),
+                    "item_count": lst.get("list", {}).get("contentTypesEnabled", False),
+                    "created": lst.get("createdDateTime", "Unknown"),
+                    "last_modified": lst.get("lastModifiedDateTime", "Unknown"),
+                }
+                for lst in lists
+            ]
+            logger.info(f"Successfully retrieved {len(formatted)} lists")
+            return json.dumps(formatted, indent=2)
+        except Exception as e:
+            logger.error(f"Error in get_lists: {str(e)}")
+            raise
+
+    @mcp.tool()
+    async def get_list_items(
+        ctx: Context,
+        site_id: str,
+        list_id: str,
+        top: int = 100,
+        filter_query: str = "",
+    ) -> str:
+        """Get items from a SharePoint list with all their column/field values.
+
+        This queries the Graph API /sites/{siteId}/lists/{listId}/items endpoint
+        with $expand=fields to return all column values including Status, Title, etc.
+
+        Args:
+            site_id: The site ID. For subsites use compound format
+                (e.g. "f474e3b9-...,0b580fc8-...")
+            list_id: The list ID (GUID) or display name
+            top: Maximum items to return (default 100, max 5000)
+            filter_query: Optional OData filter (e.g. "fields/Status eq 'Active'")
+        """
+        logger.info(f"Tool called: get_list_items for list: {list_id}")
+        try:
+            sp_ctx = ctx.request_context.lifespan_context
+            _check_auth(sp_ctx)
+            await refresh_token_if_needed(sp_ctx)
+            graph_client = GraphClient(sp_ctx)
+
+            result = await graph_client.get_list_items(
+                site_id, list_id, top=top, filter_query=filter_query
+            )
+            items = result.get("value", [])
+            formatted = []
+            for item in items:
+                entry = {
+                    "id": item.get("id", "Unknown"),
+                    "web_url": item.get("webUrl", ""),
+                    "created": item.get("createdDateTime", ""),
+                    "last_modified": item.get("lastModifiedDateTime", ""),
+                    "fields": item.get("fields", {}),
+                }
+                formatted.append(entry)
+            logger.info(f"Successfully retrieved {len(formatted)} list items")
+            return json.dumps(formatted, indent=2)
+        except Exception as e:
+            logger.error(f"Error in get_list_items: {str(e)}")
+            raise
+
+    @mcp.tool()
     async def get_document_content(
         ctx: Context, site_id: str, drive_id: str, item_id: str, filename: str
     ) -> str:

@@ -9,6 +9,58 @@ logger = logging.getLogger("graph_client")
 class _GraphListOpsMixin:
     """List CRUD and schema operations for the Microsoft Graph API."""
 
+    async def get_lists(
+        self, site_id: str
+    ) -> Dict[str, Any]:
+        """Get all lists in a SharePoint site."""
+        endpoint = f"sites/{site_id}/lists"
+        logger.info(f"Getting lists for site: {site_id}")
+        return await self.get(endpoint)
+
+    async def get_list_items(
+        self,
+        site_id: str,
+        list_id: str,
+        top: int = 100,
+        select_fields: List[str] | None = None,
+        filter_query: str = "",
+        expand_fields: bool = True,
+    ) -> Dict[str, Any]:
+        """Get items from a SharePoint list with their field values.
+
+        Args:
+            site_id: The site ID (can be compound: siteCollectionId,webId).
+            list_id: The list ID or list display name.
+            top: Maximum number of items to return (default 100).
+            select_fields: Optional list of field names to select.
+            filter_query: Optional OData $filter expression.
+            expand_fields: Whether to expand fields (default True).
+        """
+        endpoint = f"sites/{site_id}/lists/{list_id}/items"
+        params = [f"$top={top}"]
+        if expand_fields:
+            if select_fields:
+                fields_select = ",".join(select_fields)
+                params.append(f"$expand=fields($select={fields_select})")
+            else:
+                params.append("$expand=fields")
+        if filter_query:
+            params.append(f"$filter={filter_query}")
+
+        if params:
+            endpoint += "?" + "&".join(params)
+
+        logger.info(f"Getting list items from list: {list_id} in site: {site_id}")
+        return await self.get(endpoint)
+
+    async def get_list_item(
+        self, site_id: str, list_id: str, item_id: str
+    ) -> Dict[str, Any]:
+        """Get a single item from a SharePoint list with all field values."""
+        endpoint = f"sites/{site_id}/lists/{list_id}/items/{item_id}?$expand=fields"
+        logger.info(f"Getting list item {item_id} from list: {list_id}")
+        return await self.get(endpoint)
+
     async def create_list(
         self,
         site_id: str,
