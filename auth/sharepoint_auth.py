@@ -317,9 +317,14 @@ async def get_auth_context() -> SharePointContext:
 
 
 async def refresh_token_if_needed(context: SharePointContext) -> None:
-    """Refresh token if needed."""
-    if not context.is_token_valid():
-        logger.info("Token expired, refreshing...")
+    """Refresh token if needed.
+
+    Also re-authenticates when the server started with the error context
+    (authentication failed at startup), so a temporary startup failure does
+    not disable the server until it is restarted.
+    """
+    if context.access_token == "error" or not context.is_token_valid():
+        logger.info("Token expired or missing, refreshing...")
         try:
             # Re-authenticate to get a new token
             new_context = await get_auth_context()

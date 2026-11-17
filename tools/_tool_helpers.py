@@ -2,8 +2,14 @@
 
 
 def _check_auth(sp_ctx) -> None:
-    """Check if authentication context is valid, raise exception if not."""
-    if not sp_ctx or sp_ctx.access_token == "error" or not sp_ctx.is_token_valid():
+    """Check that an authentication context exists.
+
+    An expired token or the startup error context is not a failure here:
+    ``refresh_token_if_needed`` runs right after this check and re-authenticates
+    in both cases. Raising on expiry would make every call fail once the first
+    token (valid for about an hour) has expired.
+    """
+    if not sp_ctx:
         raise Exception(
             "SharePoint authentication failed. Please check your configuration "
             "(CLIENT_ID, CLIENT_SECRET, TENANT_ID, SITE_URL)."
